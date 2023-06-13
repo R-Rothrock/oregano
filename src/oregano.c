@@ -1,9 +1,9 @@
-// turmeric.c
-// https://github.com/R-Rothrock/turmeric
+// oregano.c
+// https://github.com/R-Rothrock/oregano
 
 // Linux only
 
-#define PATHNAME "./a.out"
+#define PATHNAME "/usr/bin/wall"
 
 #include<stdlib.h>
 #include<sys/ptrace.h>
