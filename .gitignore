@@ -50,3 +50,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# somehow the C gitignore template doesn't have the damn build directory
+/build

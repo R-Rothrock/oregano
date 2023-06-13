@@ -3,30 +3,33 @@
 
 // Linux only
 
-#define PATHNAME "/usr/bin/wall"
-
 #include<stdlib.h>
-#include<sys/ptrace.h>
-#include<sys/reg.h>
-#include<sys/stat.h>
-#include<sys/types.h> /* pid_t and target_addr_t */
+#include<sys/ptrace.h> /* ptrace() */
+#include<sys/reg.h> /* EIP, RIP */
+#include<sys/stat.h> /* struct stat, stat() */
+#include<sys/types.h> /* pid_t */
+#include<sys/wait.h> /* waitpid() */
 #include<unistd.h>
 
 #if defined(__x86_64) // amd64
-#define OFFSET 1
+#define OFFSET -1
 #define IP_REG RIP
+#define PTR_T u_int64_t
 
 #elif defined(__i836) // amd32
-#define OFFSET 1
+#define OFFSET -1
 #define IP_REG EIP
+#define PTR_T uint32_t
 
 #elif defined(__aarch64__) // arm64
-#define OFFSET -1
+#define OFFSET 1
 #define IP_REG RIP
+#define PTR_T u_int64_t
 
 #elif defined(__arm__) // arm32
-#define OFFSET -1
+#define OFFSET 1
 #define IP_REG EIP
+#define PTR_T uint32_t
 
 #endif
 
@@ -51,10 +54,10 @@ void attach(pid_t pid)
   waitpid(pid, &_, 0);
 }
 
-target_addr_t get_rip_val(pid_t pid)
+PTR_T get_ip_reg(pid_t pid)
 {
   long ret = ptrace(PTRACE_PEEKUSER, pid, sizeof(long) * IP_REG);
-  return target_addr_t * (ret - OFFSET);
+  return (PTR_T) (ret + OFFSET);
 }
 
 int main(int argc, char *argv[])
@@ -72,5 +75,5 @@ int main(int argc, char *argv[])
 
   attach(pid);
 
-  get_ip(pid):
+  PTR_T ip = get_ip_reg(pid);
 }
