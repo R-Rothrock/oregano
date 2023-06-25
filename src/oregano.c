@@ -10,7 +10,6 @@ static char process_pathname[] = "./test";
 #include<stdlib.h>
 #include<sys/ptrace.h> /* ptrace() */
 #include<sys/reg.h> /* EIP, RIP */
-#include<sys/stat.h> /* struct stat, stat() */
 #include<sys/types.h> /* pid_t */
 #include<sys/wait.h> /* waitpid() */
 #include<unistd.h>
