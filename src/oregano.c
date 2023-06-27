@@ -1,7 +1,7 @@
 // oregano.c
 // https://github.com/R-Rothrock/oregano
 
-#include<stdio.h> // to be commented out on commit
+//#include<stdio.h> // to be commented out on commit
 
 #define _GNU_SOURCE
 
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
   ptrace(PTRACE_CONT, pid, 18, 0);
 
-  perror("Status"); // to be commented out on commit
+  //perror("Status"); // to be commented out on commit
 
   return 0;
 }
