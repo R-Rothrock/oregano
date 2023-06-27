@@ -1,9 +1,24 @@
 # Oregano
 
-Example program that secretly executes an ELF64 binary via process
-hollowing an `htop` process.
+Example program that secretly executes a binary file by injecting
+shellcode into an `htop` process that executes a file and exits.
 
-STILL IN DEVELOPMENT
+# Usage
+
+You'll have to change the line of code at the begining that looks
+like this:
+
+```c
+static char[] pathname = "./test.out";
+```
+
+After this, you can then compile and execute, and see the effects.
+
+# Disclaimer
+
+As I'm sure you know...
+
+THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY TO THE EXTENT ALLOWED BY APPLICABLE STATE AND FEDERAL LAW, etc.
 ---
 
-As it turns out, this is a little time consuming...
+See the MIT license for more details.
