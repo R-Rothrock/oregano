@@ -97,6 +97,7 @@ void attach(pid_t pid)
   int _;
   ptrace(PTRACE_ATTACH, pid);
   waitpid(pid, &_, 0);
+  ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEEXIT);
 }
 
 PTR_T get_ip_reg(pid_t pid)
