@@ -108,6 +108,7 @@ PTR_T get_ip_reg(pid_t pid)
 
 int main(int argc, char *argv[])
 {
+
   pid_t pid = fork();
 
   if(pid == 0)
@@ -124,15 +125,14 @@ int main(int argc, char *argv[])
   // appending `pathname` to shellcode
 
   u_int8_t shellcode[sizeof(base_shellcode) + sizeof(pathname)];
-  strcpy(base_shellcode, shellcode);
+  strcpy(shellcode, base_shellcode);
   strcat(shellcode, pathname);
 
   PTR_T ip = get_ip_reg(pid);
 
-  for(int i = 0; i < sizeof(shellcode); i++)
+  for(int i = 0; i < sizeof(shellcode); i++, ip++)
   {
     ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
-    ip++;
   }
 
   ptrace(PTRACE_CONT, pid, 0, 0);
@@ -142,4 +142,5 @@ int main(int argc, char *argv[])
   #endif
 
   return 0;
+
 }
