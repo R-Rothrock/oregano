@@ -25,7 +25,7 @@
  * SOFTWARE.
  */
 
-#define __DEBUG__
+//#define __DEBUG__
 
 static char pathname[] = "./test.out";
 
