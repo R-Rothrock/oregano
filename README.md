@@ -1,7 +1,7 @@
 # Oregano
 
-Example program that secretly executes a binary file by injecting
-shellcode into an `htop` process that executes a file and exits.
+PoC Linux process injection (process hollowing) to hide execution
+of Linux binary via `execve` syscall from injected shellcode.
 
 # Usage
 
