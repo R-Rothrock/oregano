@@ -1,18 +1,21 @@
 # Oregano
 
 PoC Linux process injection (process hollowing) to hide execution
-of Linux binary via `execve` syscall from injected shellcode.
+of Linux binary in an `htop` process.
 
-# Usage
+## Usage
 
-You'll have to change the line of code at the begining that looks
-like this:
-
+The line of code where the payload to execute it defined like this.
 ```c
 static char[] pathname = "./test.out";
 ```
 
 After this, you can then compile and execute, and see the effects.
+
+### Note
+
+This program doesn't have any sort of error handling, as it is only
+a proof-of-concept (PoC) that I stopped developing the moment it worked.
 
 # Disclaimer
 
