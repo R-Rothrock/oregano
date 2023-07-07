@@ -6,7 +6,7 @@ set(CMAKE_C_COMPILER "/usr/bin/gcc")
 
 project("Oregano"
 		VERSION 1.0
-		DESCRIPTION "Linux Htop process injection for arbitrary execve call"
+		DESCRIPTION "PoC Linux process injection (process hollowing) to hide execution of Linux binary in Htop process."
 		LANGUAGES C
 		)
 
