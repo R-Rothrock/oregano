@@ -27,8 +27,6 @@
 
 //#define __DEBUG__
 
-static char pathname[] = "./test.out";
-
 #ifdef __DEBUG__
 #  include<stdio.h> // to be commented out on commit
 #endif
@@ -108,6 +106,15 @@ PTR_T get_ip_reg(pid_t pid)
 
 int main(int argc, char *argv[])
 {
+
+  char *pathname;
+  if(argc != 2)
+  {
+    pathname = "./a.out";
+  } else
+  {
+    pathname = argv[1];
+  }
 
   pid_t pid = fork();
 
