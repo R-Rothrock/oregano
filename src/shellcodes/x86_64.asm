@@ -1,4 +1,5 @@
 ; x86_64.asm
+[BITS 64]
 
 section .text
 	global _start

