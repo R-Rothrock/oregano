@@ -240,7 +240,15 @@ int main(int argc, char *argv[])
     //printf("%s 0x%02x  %c\t%p\n", DEBUG, shellcode[i], shellcode[i], ip);
     //#endif
 
-    ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
+    ret = ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
+    if(ret != 0)
+    {
+      #ifdef __OUTPUT__
+      printf("%s Error in injection: %s\n", INFO, strerror(errno));
+      printf("%s Aborting...\n", INFO);
+      #endif
+      exit(1);
+    }
   }
 
   #ifdef __OUTPUT__

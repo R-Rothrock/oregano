@@ -6,7 +6,25 @@ of Linux binary in an `htop` process.
 ## Usage
 
 ```
-$ ./oregano 
+OPTIONS: ./oregano [PID/PATH] [EXECUTABLE]
+```
+
+The first argument defines the `tracee` either by PID or program to
+execute, and the second argument defines what you would like to be
+executed _by_ the shellcode. I will add support for `.bin` files to be
+supplied for shellcode in the future, but feel free to send a
+PR if you want to do it, which brings me to
+
+## Contributing
+
+Do so. Or don't. Up to you. You will get special thanks and stuff if you do.
+
+### Note
+
+It doesn't work _perfectly_. Sometimes, the _tracee_ segfaults or does
+something like this:
+
+```
 
  .ei88ie.
 .fE'  'Gf
@@ -18,15 +36,25 @@ D8.    .8I
  --------------
  : Author: Roan Rothrock
  : <roan.rothrock@hotmail.com>
-OPTIONS: ./oregano [PID/PATH] [EXECUTABLE]
+[-] Child PID: 14393
+[-] Attached to process 14393. Preparing shellcode.
+[+] Shellcode size: 67
+[+] Shellcode: 
+0x48 0x31 0xc0 0x48 0x31 0xff 0x48 0x31 0xf6 0x48 
+0x31 0xd2 0x48 0x8d 0x3d 0x37 0x10 0x10 0x10 0x48 
+0x81 0xef 0x10 0x10 0x10 0x10 0x48 0x8d 0x35 0x29 
+0x10 0x10 0x10 0x48 0x81 0xee 0x10 0x10 0x10 0x10 
+0x56 0x48 0x89 0xe6 0xb0 0x3b 0x0f 0x05 0x48 0x31 
+0xc0 0xb0 0x3c 0x48 0x31 0xff 0x0f 0x05 0x2f 0x62 
+0x69 0x6e 0x2f 0x68 0x74 0x6f 0x70 
+[+] Instruction pointer (RIP/EIP): 0x7fc68c4da196
+[-] Injecting shellcode...
+[-] Shellcode injected. Restarting process.
+[-] Child exited. Exiting...
+[roanr@manjaro oregano]$ Error: unsupported non-option ARGV-elements: A�ą���
 ```
 
-### Note
-
-It doesn't work _perfectly_. For example, if `RIP`/`EIP` is nearing the
-end of the executable, the shellcode will overflow and cause it to
-segfault. There's plenty of problems like these, but it still works
-sufficiently.
+So, it's not exactly safe (nor do I think it will ever truly be) but it works _most_ of the time.
 
 # As I'm sure you know...
 
