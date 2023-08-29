@@ -7,6 +7,17 @@ of Linux binary in an `htop` process.
 
 ```
 $ ./oregano 
+
+ .ei88ie.
+.fE'  'Gf
+i8      8i
+D8      8L
+D8.    .8I
+:GL    j8'
+ 't8jj9t'reg@n0
+ --------------
+ : Author: Roan Rothrock
+ : <roan.rothrock@hotmail.com>
 OPTIONS: ./oregano [PID/PATH] [EXECUTABLE]
 ```
 

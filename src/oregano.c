@@ -39,6 +39,18 @@
 #  include<stdio.h>
 #  define INFO "\033[32m[-]\033[0m"
 #  define HELP(X) printf("OPTIONS: %s [PID/PATH] [EXECUTABLE]\n", X); exit(1);
+#  define LOGO \
+printf("\033[94m\n"); \
+printf(" .ei88ie.\n"); \
+printf(".fE'  'Gf\n"); \
+printf("i8      8i\n"); \
+printf("D8      8L\n"); \
+printf("D8.    .8I\n"); \
+printf(":GL    j8'\n"); \
+printf(" 't8jj9t'reg@n0\n"); \
+printf(" --------------\n"); \
+printf("\033[32m : Author: Roan Rothrock\n : <roan.rothrock@hotmail.com>\n"); \
+printf("\033[0m");
 #endif
 
 #define __GNU_SOURCE
@@ -129,6 +141,9 @@ PTR_T get_ip_reg(pid_t pid)
 
 int main(int argc, char *argv[])
 {
+  #ifdef __OUTPUT__
+  LOGO;
+  #endif
 
   int ret; // to be used again and again
   pid_t pid;
