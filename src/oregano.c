@@ -128,19 +128,6 @@ PTR_T get_ip_reg(pid_t pid)
   return (PTR_T) (ret + OFFSET);
 }
 
-const char *get_file_extension(char *pathname)
-{
-  char *ptr;
-  for(ptr = pathname + strlen(pathname); ptr > pathname; ptr--)
-  {
-    if(strcmp(ptr, "."))
-    {
-      return ptr;
-    }
-  }
-  return pathname;
-}
-
 int main(int argc, char *argv[])
 {
   #ifdef __BANNER__
