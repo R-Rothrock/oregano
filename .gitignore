@@ -56,3 +56,9 @@ dkms.conf
 
 # disassemblies
 *.dump
+
+# GNU Nano swaps (which I seem to be leaving around a lot)
+*.swp
+
+# testing executables
+/test
