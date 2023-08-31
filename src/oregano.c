@@ -104,9 +104,8 @@ static u_int8_t base_shellcode[] = {
 u_int8_t child(char *pathname)
 {
   //printf("Child is executing...");
-  char *child_argv[] = {pathname, 0};
-  char *child_envp[] = {0};
-  int ret = execve(child_argv[0], child_argv, child_envp);
+  char *child_argv[] = {pathname, 0}; // feel free to add args
+  int ret = execv(child_argv[0], child_argv);
   exit(ret);
 }
 
