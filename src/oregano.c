@@ -128,17 +128,26 @@ PTR_T get_ip_reg(pid_t pid)
   return (PTR_T) (ret + OFFSET);
 }
 
+const char *get_file_ext(const char *pathname) {
+    const char *ptr = strrchr(pathname, '.');
+    if(!ptr || ptr == pathname)
+    {
+      return "";
+    }
+    return ptr + 1;
+}
+
 int main(int argc, char *argv[])
 {
   #ifdef __BANNER__
   printf("\033[32m\
-  ..::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::..\n\
- .::::_|_|::::_|_|_|::::_|_|_|_|::::_|_|_|::::_|_|::::_|::::::_|::::_|_|::::.\n\
- .::_|::::_|::_|::::_|::_|::::::::_|::::::::_|::::_|::_|_|::::_|::_|::::_|::.\n\
- .::_|::::_|::_|_|_|::::_|_|_|::::_|::_|_|::_|_|_|_|::_|::_|::_|::_|::::_|::.\n\
- .::_|::::_|::_|::::_|::_|::::::::_|::::_|::_|::::_|::_|::::_|_|::_|::::_|::.\n\
- .::::_|_|::::_|::::_|::_|_|_|_|::::_|_|_|::_|::::_|::_|::::::_|::::_|_|:::.\n\
-  .:::::::::::::::::::::::::::Roan:Rothrock::<roan.rothrock@hotmail.com>::.\n\
+ HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\
+ HHHH_|_|HHHH_|_|_|HHHH_|_|_|_|HHHH_|_|_|HHHH_|_|HHHH_|HHHHHH_|HHHH_|_|HHHH\n\
+ HH_|HHHH_|HH_|HHHH_|HH_|HHHHHHHH_|HHHHHHHH_|HHHH_|HH_|_|HHHH_|HH_|HHHH_|HH\n\
+ HH_|HHHH_|HH_|_|_|HHHH_|_|_|HHHH_|HH_|_|HH_|_|_|_|HH_|HH_|HH_|HH_|HHHH_|HH\n\
+ HH_|HHHH_|HH_|HHHH_|HH_|HHHHHHHH_|HHHH_|HH_|HHHH_|HH_|HHHH_|_|HH_|HHHH_|HH\n\
+ HHHH_|_|HHHH_|HHHH_|HH_|_|_|_|HHHH_|_|_|HH_|HHHH_|HH_|HHHHHH_|HHHH_|_|HHHH\n\
+ HHHHHHHHHHHHHHHHHHHHHHHHHHHHRoanHRothrockHH<roan.rothrock@hotmail.com>HHHH\n\
 \033[0m");
   #endif
 
