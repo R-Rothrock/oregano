@@ -64,4 +64,4 @@ dkms.conf
 /test
 
 # also
-.bin
+*.bin

