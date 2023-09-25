@@ -1,7 +1,18 @@
 # Oregano
 
-PoC Linux process injection (process hollowing) to hide execution
-of Linux binary in an `htop` process.
+PoC Linux process injection with a working command line interface.
+
+## Requirements
+- Linux x86-64 >= 3.something (I don't remember exactly)
+
+## Installation
+```shell
+$ git clone https://github.com/R-Rothrock/oregano
+$ cd oregano
+$ make
+$ ./oregano
+...
+```
 
 ## Usage
 
