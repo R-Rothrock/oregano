@@ -32,10 +32,17 @@ Do so. Or don't. Up to you. You will get special thanks and stuff if you do.
 
 It doesn't work _perfectly_. Sometimes, the _tracee_ segfaults or does
 something weird. If you want to see what I'm talking about, try `sudo oregano 1 /usr/bin/reboot`
+in a virtual terminal.
 
 So, it's not exactly safe (nor do I think it will ever truly be) but it works _most_ of the time.
 Nevertheless, I have eliminated segfaults and false positives regarding the shellcode's execution
-to the best of my ability, though my ability is albeit limited.
+to the best of my ability, though my ability is albeit limited. I intend to work on this more down
+the line.
+
+With some executables, it works somewhere between 0-10% of the time, and with others, it works
+about 50% of the time. So it's not great. Apparently, according to **@Mladia**, compilling
+program with the `execstack` program header flag makes it work 100% of the time. I haven't tested
+this, though, so take it as you will.
 
 # As I'm sure you know...
 
