@@ -4,6 +4,7 @@ PoC Linux process injection with a working command line interface.
 
 ## Requirements
 - Linux x86-64 >= 3.something (I don't remember exactly)
+- Proper `ptrace_scope` permissions (Google it if you're not sure.)
 
 ## Installation
 ```shell
@@ -30,19 +31,12 @@ Do so. Or don't. Up to you. You will get special thanks and stuff if you do.
 
 ### Note
 
-It doesn't work _perfectly_. Sometimes, the _tracee_ segfaults or does
-something weird. If you want to see what I'm talking about, try `sudo oregano 1 /usr/bin/reboot`
-in a virtual terminal.
-
-So, it's not exactly safe (nor do I think it will ever truly be) but it works _most_ of the time.
-Nevertheless, I have eliminated segfaults and false positives regarding the shellcode's execution
-to the best of my ability, though my ability is albeit limited. I intend to work on this more down
-the line.
-
-With some executables, it works somewhere between 0-10% of the time, and with others, it works
-about 50% of the time. So it's not great. Apparently, according to **@Mladia**, compilling
-program with the `execstack` program header flag makes it work 100% of the time. I haven't tested
-this, though, so take it as you will.
+It doesn't work _perfectly_. Sometimes, the _tracee_ segfaults or fails to
+execute the shellcode properly (though this could be a problem with the
+shellcode.) It generally works anywhere between %5 and %95. This usuallydepends
+on the executable being injected. It has been confirmed that injecting an
+executable that has the `execstack` header flag is far more likely to be
+injected successfully (%90-100.)
 
 # As I'm sure you know...
 
@@ -50,5 +44,5 @@ THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY TO THE EXTENT ALLOWED BY
 APPLICABLE STATE AND FEDERAL LAW, etc.
 ---
 
-See the MIT license for more details. Basically if you're a dumbass I'm
-not affected (thank God.)
+See the MIT license for more details. Basically if you decide to be a dumbass I'm
+not affected.
