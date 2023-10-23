@@ -25,18 +25,12 @@ The first argument defines the `tracee` either by PID or program to
 execute, and the second argument defines whether you want your own shellcode,
 or whether you want _my_ built-in shellcode to execute a file of your choosing.
 
-## Contributing
-
-Do so. Or don't. Up to you. You will get special thanks and stuff if you do.
-
 ### Note
 
-It doesn't work _perfectly_. Sometimes, the _tracee_ segfaults or fails to
-execute the shellcode properly (though this could be a problem with the
-shellcode.) It generally works anywhere between %5 and %95. This usuallydepends
-on the executable being injected. It has been confirmed that injecting an
-executable that has the `execstack` header flag is far more likely to be
-injected successfully (%90-100.)
+This program doesn't work with a 100% success rate. To confirm that it works, use
+short shellcode (preferably the shellcode built in, as opposed to using your own.) 
+Additionally, injecting a program with the `execstack` executable flag will have a
+100% success rate ([thanks to Mladia for bringing this up](https://github.com/R-Rothrock/oregano/issues/1).)
 
 # As I'm sure you know...
 
